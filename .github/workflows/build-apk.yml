@@ -1,0 +1,38 @@
+name: Build Flutter APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: stable
+
+      - name: Create Android project folder
+        run: |
+          cd Mobile
+          flutter create --org com.nexcall --platforms=android nexcall_mobile
+          mv nexcall_mobile/android android/
+          rm -rf nexcall_mobile
+
+      - name: Get Flutter packages
+        run: |
+          cd Mobile
+          flutter pub get
+
+      - name: Build release APK
+        run: |
+          cd Mobile
+          flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexcall-release-apk
+          path: Mobile/build/app/outputs/flutter-apk/app-release.apk
