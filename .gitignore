@@ -1,0 +1,26 @@
+# Dependency directories
+node_modules/
+
+# Local env files (holding private keys/tokens)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+
+# Flutter build and cache files
+Mobile/build/
+Mobile/.dart_tool/
+Mobile/.flutter-plugins
+Mobile/.flutter-plugins-dependencies
+Mobile/.metadata
+Mobile/.packages
+
+# System/IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.gemini/
+*.log
