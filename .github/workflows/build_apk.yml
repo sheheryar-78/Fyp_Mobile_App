@@ -4,72 +4,52 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
-      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m" -Dorg.gradle.daemon=false
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Flutter doctor
-        run: flutter doctor -v > Mobile/doctor_log.txt 2>&1
-
       - name: Recreate Android project folder
         run: |
           cd Mobile
-          flutter create --org com.nexcall --project-name nexcall_mobile --platforms=android temp_android 2>&1
+          flutter create --org com.nexcall --project-name nexcall_mobile --platforms=android temp_android
           cp -r temp_android/android/ android/
           rm -rf temp_android
 
       - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses 2>&1 | tail -5
+        run: yes | flutter doctor --android-licenses 2>&1
 
-      - name: Install Dependencies
+      - name: Get packages
         run: |
           cd Mobile
           flutter pub get
 
-      - name: Build Release APK
-        id: build
+      - name: Build APK
         run: |
           cd Mobile
-          flutter build apk --release 2>&1 | tee build_log.txt
-          exit $PIPESTATUS
+          flutter build apk --release
 
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: Mobile/build_log.txt
-          if-no-files-found: ignore
-
-      - name: Upload doctor log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: doctor-log
-          path: Mobile/doctor_log.txt
-          if-no-files-found: ignore
+      - name: Show error log on failure
+        if: failure()
+        run: |
+          echo "=== BUILD LOG ==="
+          cat Mobile/build_log.txt 2>/dev/null || echo "No build log"
+          echo "=== FLUTTER DOCTOR ==="
+          flutter doctor -v
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: nexcall-app-release
