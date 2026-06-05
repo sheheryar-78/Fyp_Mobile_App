@@ -1,4 +1,5 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -179,4 +180,4 @@ class SharedPreferencesHelper {
     await prefs.remove('user');
   }
 }
-import 'package:shared_preferences/shared_preferences.dart';
+

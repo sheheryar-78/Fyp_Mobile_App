@@ -1,4 +1,4 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {

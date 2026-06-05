@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
 import '../main.dart';
