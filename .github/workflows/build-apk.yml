@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +44,7 @@ jobs:
       - name: Build release APK
         run: |
           cd Mobile
-          flutter build apk --release
+          flutter build apk --release --verbose
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

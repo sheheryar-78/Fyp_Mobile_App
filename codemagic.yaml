@@ -8,6 +8,8 @@ workflows:
       flutter: stable
       groups:
         - env_vars # optional
+      vars:
+        GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
     triggering:
       events:
         - push
@@ -37,6 +39,6 @@ workflows:
       - name: Build Release APK
         script: |
           cd Mobile
-          flutter build apk --release
+          flutter build apk --release --verbose
     artifacts:
       - Mobile/build/app/outputs/flutter-apk/app-release.apk
