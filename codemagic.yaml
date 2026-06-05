@@ -18,6 +18,18 @@ workflows:
         script: |
           cd Mobile
           flutter create --org com.nexcall --platforms=android .
+          cat << 'EOF' >> android/build.gradle
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      project.android {
+                          compileSdk 36
+                          compileSdkVersion 36
+                      }
+                  }
+              }
+          }
+          EOF
       - name: Get Flutter Packages
         script: |
           cd Mobile

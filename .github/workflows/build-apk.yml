@@ -19,6 +19,21 @@ jobs:
           cd Mobile
           flutter create --org com.nexcall --platforms=android .
 
+      - name: Force Android Compile SDK to 36
+        run: |
+          cat << 'EOF' >> Mobile/android/build.gradle
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      project.android {
+                          compileSdk 36
+                          compileSdkVersion 36
+                      }
+                  }
+              }
+          }
+          EOF
+
       - name: Get Flutter packages
         run: |
           cd Mobile
