@@ -38,11 +38,11 @@ class NexCallApp extends StatelessWidget {
           foregroundColor: Color(0xFF0F172A),
           elevation: 0,
           scrolledUnderElevation: 0,
-          border: Border(
+          shape: Border(
             bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(

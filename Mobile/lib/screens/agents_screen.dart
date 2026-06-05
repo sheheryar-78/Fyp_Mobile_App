@@ -241,7 +241,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         isEditing ? 'Edit Agent' : agent['name'],

@@ -84,7 +84,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
                 children: [
                   // Title Header
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +202,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
                   
                   // Rate interaction
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

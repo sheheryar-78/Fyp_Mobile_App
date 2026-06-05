@@ -18,18 +18,18 @@ class _BillingScreenState extends State<BillingScreen> {
   final List<Map<String, dynamic>> _plans = [
     {
       "name": "Starter",
-      "price": "$0",
+      "price": "\$0",
       "features": ["1,000 mins/month", "Up to 3 AI agents", "Basic analytics", "Email support"],
     },
     {
       "name": "Professional",
-      "price": "$20",
+      "price": "\$20",
       "popular": true,
       "features": ["5,000 mins/month", "Up to 5 AI agents", "Advanced analytics", "Priority support", "Voice training"],
     },
     {
       "name": "Enterprise",
-      "price": "$50",
+      "price": "\$50",
       "features": ["Unlimited minutes", "Up to 10 AI agents", "Full analytics suite", "24/7 support", "Custom voice"],
     },
   ];
@@ -137,7 +137,7 @@ class _BillingScreenState extends State<BillingScreen> {
                       const Divider(color: Colors.white24),
                       const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Usage: $usedMins / $monthlyMins minutes", style: const TextStyle(color: Colors.white, fontSize: 13)),
                           Text("${(progress * 100).toStringAsFixed(0)}% Used", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
