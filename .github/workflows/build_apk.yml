@@ -27,13 +27,18 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Flutter doctor
+        run: flutter doctor -v > Mobile/doctor_log.txt 2>&1
+
       - name: Recreate Android project folder
         run: |
           cd Mobile
-          flutter create --org com.nexcall --platforms=android temp_android
-          rm -rf android
-          mv temp_android/android android
+          flutter create --org com.nexcall --project-name nexcall_mobile --platforms=android temp_android 2>&1
+          cp -r temp_android/android/ android/
           rm -rf temp_android
+
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses 2>&1 | tail -5
 
       - name: Install Dependencies
         run: |
@@ -41,13 +46,32 @@ jobs:
           flutter pub get
 
       - name: Build Release APK
+        id: build
         run: |
           cd Mobile
-          flutter build apk --release --verbose
+          flutter build apk --release 2>&1 | tee build_log.txt
+          exit $PIPESTATUS
 
-      - name: Upload Build Artifact
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: Mobile/build_log.txt
+          if-no-files-found: ignore
+
+      - name: Upload doctor log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctor-log
+          path: Mobile/doctor_log.txt
+          if-no-files-found: ignore
+
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: nexcall-app-release
           path: Mobile/build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          if-no-files-found: ignore
