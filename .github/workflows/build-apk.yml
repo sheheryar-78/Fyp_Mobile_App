@@ -17,9 +17,7 @@ jobs:
       - name: Create Android project folder
         run: |
           cd Mobile
-          flutter create --org com.nexcall --platforms=android nexcall_mobile
-          mv nexcall_mobile/android android/
-          rm -rf nexcall_mobile
+          flutter create --org com.nexcall --platforms=android .
 
       - name: Get Flutter packages
         run: |

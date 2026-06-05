@@ -27,9 +27,8 @@ jobs:
 
       - name: Recreate Android Project Folder
         run: |
-          flutter create --org com.nexcall --platforms=android nexcall_mobile
-          mv nexcall_mobile/android Mobile/android
-          rm -rf nexcall_mobile
+          cd Mobile
+          flutter create --org com.nexcall --platforms=android .
 
       - name: Install Dependencies
         run: |
