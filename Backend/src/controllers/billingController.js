@@ -24,13 +24,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_dummy");
 export const createCheckoutSession = async (req, res) => {
   try {
     const { planName, priceAmount } = req.body;
-    
+
     // For FYP demonstration without real keys, we can bypass Stripe if key is dummy
     if (!process.env.STRIPE_SECRET_KEY) {
       console.log("No Stripe Key found. Using mock checkout URL.");
       // Just redirect straight to success for FYP demo
-      return res.json({ 
-        url: `http://localhost:5173/billing?success=true&session_id=mock_session_123&plan=${planName}` 
+      return res.json({
+        url: `http://localhost:5173/billing?success=true&session_id=mock_session_123&plan=${planName}`
       });
     }
 
@@ -90,9 +90,9 @@ export const verifyPayment = async (req, res) => {
 
     const updatedBilling = await Billing.findOneAndUpdate(
       { userId: req.userId },
-      { 
-        currentPlan: planName, 
-        maxAgents, 
+      {
+        currentPlan: planName,
+        maxAgents,
         maxDocuments,
         monthlyMinutes,
         $push: { paymentHistory: newPayment }

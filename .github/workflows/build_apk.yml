@@ -8,9 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     env:
-      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m" -Dorg.gradle.daemon=false
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
 
     steps:
       - name: Checkout Code
@@ -21,45 +21,50 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
-      - name: Flutter doctor
-        run: flutter doctor -v
+          cache: true
 
       - name: Recreate Android project folder
         run: |
           cd Mobile
-          flutter create --org com.nexcall --project-name nexcall_mobile --platforms=android temp_android
-          cp -r temp_android/android/ android/
-          rm -rf temp_android
+          flutter create --org com.nexcall --platforms=android .
+
+      - name: Force Android SDK compileSdkVersion to 34
+        run: |
+          cat << 'EOF' >> Mobile/android/build.gradle
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      project.android {
+                          compileSdk 34
+                          compileSdkVersion 34
+                      }
+                  }
+              }
+          }
+          EOF
 
       - name: Accept Android licenses
-        run: yes | flutter doctor --android-licenses 2>&1
+        run: yes | flutter doctor --android-licenses || true
 
       - name: Get packages
         run: |
           cd Mobile
           flutter pub get
 
-      - name: Build Debug APK
-        id: build_debug
-        run: |
-          cd Mobile
-          flutter build apk --debug 2>&1
-
       - name: Build Release APK
-        id: build_release
         run: |
           cd Mobile
-          flutter build apk --release 2>&1
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: nexcall-app-release
           path: Mobile/build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: ignore
+          if-no-files-found: error
