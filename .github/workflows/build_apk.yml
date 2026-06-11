@@ -59,7 +59,15 @@ jobs:
       - name: Build Release APK
         run: |
           cd Mobile
-          flutter build apk --release
+          flutter build apk --release --verbose 2>&1
+
+      - name: Show error on failure
+        if: failure()
+        run: |
+          echo "=== Flutter Doctor ==="
+          flutter doctor -v
+          echo "=== Dart Analyze ==="
+          cd Mobile && flutter analyze --no-fatal-infos || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

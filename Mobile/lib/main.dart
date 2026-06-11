@@ -28,7 +28,6 @@ class NexCallApp extends StatelessWidget {
           seedColor: const Color(0xFF2563EB), // Primary Blue
           primary: const Color(0xFF2563EB),
           secondary: const Color(0xFF3B82F6),
-          background: const Color(0xFFF8FAFC), // Off-white/Slate-50
           surface: Colors.white,
           error: const Color(0xFFEF4444),
         ),
@@ -38,9 +37,6 @@ class NexCallApp extends StatelessWidget {
           foregroundColor: Color(0xFF0F172A),
           elevation: 0,
           scrolledUnderElevation: 0,
-          shape: Border(
-            bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-          ),
         ),
         cardTheme: CardTheme(
           color: Colors.white,
