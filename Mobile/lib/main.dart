@@ -130,7 +130,7 @@ class AppNavigationDrawer extends StatelessWidget {
             title: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
             onTap: () async {
               // Sign out logic
-              final prefs = await SharedPreferencesHelper.clearToken();
+              await SharedPreferencesHelper.clearToken();
               if (context.mounted) {
                 Navigator.pushReplacementNamed(context, '/login');
               }
