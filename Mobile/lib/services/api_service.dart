@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Replace this with your Vercel deployment URL, e.g., "https://nexcall-backend.vercel.app/api"
-  static const String defaultBaseUrl = "https://squamosely-apish-ivana.ngrok-free.dev/api";
+  static const String defaultBaseUrl = "https://fypmobileapp-production.up.railway.app/api";
   
   static String get baseUrl => defaultBaseUrl;
 
