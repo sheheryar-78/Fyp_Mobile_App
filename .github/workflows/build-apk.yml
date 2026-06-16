@@ -37,10 +37,8 @@ jobs:
               afterEvaluate { project ->
                   if (project.hasProperty("android")) {
                       project.android {
-                          compileSdk 36
                           compileSdkVersion 36
                           defaultConfig {
-                              minSdk 24
                               minSdkVersion 24
                           }
                       }
@@ -60,7 +58,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd Mobile
-          flutter build apk --release
+          flutter build apk --release -v
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
