@@ -30,7 +30,7 @@ jobs:
           cd Mobile
           flutter create --org com.nexcall --platforms=android .
 
-      - name: Force Android SDK compileSdkVersion to 34
+      - name: Force Android SDK compileSdkVersion and minSdkVersion
         run: |
           cat << 'EOF' >> Mobile/android/build.gradle
           subprojects {
@@ -39,6 +39,10 @@ jobs:
                       project.android {
                           compileSdk 34
                           compileSdkVersion 34
+                          defaultConfig {
+                              minSdk 24
+                              minSdkVersion 24
+                          }
                       }
                   }
               }
