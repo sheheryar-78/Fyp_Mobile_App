@@ -30,22 +30,11 @@ jobs:
           cd Mobile
           flutter create --org com.nexcall --platforms=android .
 
-      - name: Force Android SDK compileSdkVersion and minSdkVersion
+      - name: Force Android SDK versions safely
         run: |
-          cat << 'EOF' >> Mobile/android/build.gradle
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty("android")) {
-                      project.android {
-                          compileSdkVersion 36
-                          defaultConfig {
-                              minSdkVersion 24
-                          }
-                      }
-                  }
-              }
-          }
-          EOF
+          cd Mobile
+          echo "flutter.compileSdkVersion=36" >> android/local.properties
+          echo "flutter.minSdkVersion=24" >> android/local.properties
 
       - name: Accept Android licenses
         run: yes | flutter doctor --android-licenses || true
