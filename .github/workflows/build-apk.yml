@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=512m" -Dorg.gradle.daemon=false
 
     steps:
       - name: Checkout Code
@@ -30,11 +30,17 @@ jobs:
           cd Mobile
           flutter create --org com.nexcall --platforms=android .
 
-      - name: Force Android SDK versions safely
+      - name: Patch compileSdkVersion and minSdkVersion in app/build.gradle
         run: |
-          cd Mobile
-          echo "flutter.compileSdkVersion=36" >> android/local.properties
-          echo "flutter.minSdkVersion=24" >> android/local.properties
+          FILE="Mobile/android/app/build.gradle"
+          # Patch compileSdk
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' "$FILE"
+          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/' "$FILE"
+          # Patch minSdk
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' "$FILE"
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/' "$FILE"
+          echo "--- Patched app/build.gradle ---"
+          cat "$FILE"
 
       - name: Accept Android licenses
         run: yes | flutter doctor --android-licenses || true
@@ -47,7 +53,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd Mobile
-          flutter build apk --release -v
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
