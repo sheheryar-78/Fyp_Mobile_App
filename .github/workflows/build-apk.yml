@@ -37,8 +37,8 @@ jobs:
               afterEvaluate { project ->
                   if (project.hasProperty("android")) {
                       project.android {
-                          compileSdk 34
-                          compileSdkVersion 34
+                          compileSdk 36
+                          compileSdkVersion 36
                           defaultConfig {
                               minSdk 24
                               minSdkVersion 24
