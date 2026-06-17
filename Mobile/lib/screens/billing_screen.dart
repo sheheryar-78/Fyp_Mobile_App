@@ -101,7 +101,7 @@ class _BillingScreenState extends State<BillingScreen> {
       appBar: AppBar(
         title: const Text('Subscription & Billing', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      drawer: const AppNavigationDrawer(currentRoute: '/billing'),
+      drawer: AppNavigationDrawer(currentRoute: '/billing'),
       body: _isLoading
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
