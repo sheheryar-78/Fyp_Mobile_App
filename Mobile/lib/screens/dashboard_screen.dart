@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
-import '../main.dart';
+import '../theme/app_theme.dart';
+import '../widgets/nexcall_app_bar.dart';
+import '../widgets/shimmer_loaders.dart';
+import '../widgets/error_state.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,93 +16,141 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
-  
+  bool _hasError   = false;
+
   Map<String, dynamic>? _stats;
-  List<dynamic> _calls = [];
+  List<dynamic> _calls     = [];
   List<dynamic> _chartData = [];
+  String _userName         = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
+    _load();
   }
 
-  Future<void> _fetchDashboardData() async {
+  Future<void> _load() async {
+    setState(() { _isLoading = true; _hasError = false; });
     try {
-      final statsRes = await ApiService.getDashboardStats();
-      final callsRes = await ApiService.getCalls();
-      final chartRes = await ApiService.getWeeklyCalls();
+      // Load user name for greeting
+      final user = await ApiService.getUser();
+      _userName = user?['name'] ?? '';
 
-      if (statsRes.statusCode == 200) {
-        _stats = jsonDecode(statsRes.body);
-      }
-      if (callsRes.statusCode == 200) {
-        _calls = jsonDecode(callsRes.body);
-      }
-      if (chartRes.statusCode == 200) {
-        _chartData = jsonDecode(chartRes.body);
-      }
+      final results = await Future.wait([
+        ApiService.getDashboardStats(),
+        ApiService.getCalls(),
+        ApiService.getWeeklyCalls(),
+      ]);
+
+      final statsRes = results[0];
+      final callsRes = results[1];
+      final chartRes = results[2];
+
+      if (statsRes.statusCode == 200) _stats     = jsonDecode(statsRes.body);
+      if (callsRes.statusCode == 200) _calls     = jsonDecode(callsRes.body);
+      if (chartRes.statusCode == 200) _chartData = jsonDecode(chartRes.body);
     } catch (e) {
-      debugPrint("Dashboard fetch error: $e");
+      debugPrint('Dashboard load error: $e');
+      setState(() => _hasError = true);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      drawer: const AppNavigationDrawer(currentRoute: '/dashboard'),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            onRefresh: _fetchDashboardData,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Welcome back!',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+      appBar: const NexCallAppBar(title: 'Dashboard'),
+      body: _isLoading
+          ? _buildSkeleton()
+          : _hasError
+              ? ErrorStateWidget(
+                  message: 'Failed to load dashboard data.',
+                  onRetry: _load,
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  color: AppTheme.primaryBlue,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildGreeting(),
+                        const SizedBox(height: 20),
+                        _buildStatsGrid(),
+                        const SizedBox(height: 20),
+                        _buildChartCard(),
+                        const SizedBox(height: 20),
+                        _buildRecentCallsCard(),
+                      ],
+                    ),
                   ),
-                  const Text(
-                    "Here's your agent performance overview.",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Stats Grid
-                  _buildStatsGrid(),
-                  const SizedBox(height: 24),
-
-                  // Analytics Chart Card
-                  _buildAnalyticsChartCard(),
-                  const SizedBox(height: 24),
-
-                  // Recent Calls Card
-                  _buildRecentCallsCard(),
-                ],
-              ),
-            ),
-          ),
+                ),
     );
   }
 
+  Widget _buildSkeleton() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerBox(width: 200, height: 20, borderRadius: 6),
+          const SizedBox(height: 6),
+          ShimmerBox(width: 280, height: 14, borderRadius: 6),
+          const SizedBox(height: 20),
+          const ShimmerStatGrid(),
+          const SizedBox(height: 20),
+          const ShimmerCardBlock(height: 260),
+          const SizedBox(height: 20),
+          const ShimmerCardBlock(height: 200),
+        ],
+      ),
+    );
+  }
+
+  // ── Greeting ───────────────────────────────────────────────────────────────
+
+  Widget _buildGreeting() {
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+    final displayName = _userName.isNotEmpty ? ', ${_userName.split(' ').first}' : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$greeting$displayName 👋',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          "Here's your AI agent performance overview.",
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+        ),
+      ],
+    );
+  }
+
+  // ── Stats Grid ─────────────────────────────────────────────────────────────
+
   Widget _buildStatsGrid() {
-    final totalCalls = _stats?['totalCalls'] ?? 0;
+    final totalCalls   = _stats?['totalCalls']   ?? 0;
     final activeAgents = _stats?['activeAgents'] ?? 0;
-    final satisfaction = _stats?['satisfaction'] ?? 0.0;
-    final avgDuration = _stats?['avgDuration'] ?? "0s";
+    final satisfaction = (_stats?['satisfaction'] ?? 0.0) is int
+        ? (_stats?['satisfaction'] ?? 0.0).toDouble()
+        : (_stats?['satisfaction'] ?? 0.0);
+    final avgDuration  = _stats?['avgDuration']  ?? '0s';
 
     return GridView.count(
       crossAxisCount: 2,
@@ -109,111 +160,155 @@ class _DashboardScreenState extends State<DashboardScreen> {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.35,
       children: [
-        _buildStatCard("Total Calls Today", "$totalCalls", Icons.phone, const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
-        _buildStatCard("Active Agents", "$activeAgents", Icons.smart_toy, const Color(0xFFECFDF5), const Color(0xFF10B981)),
-        _buildStatCard("CSAT Rating", "${satisfaction.toStringAsFixed(1)}★", Icons.thumb_up, const Color(0xFFF5F3FF), const Color(0xFF8B5CF6)),
-        _buildStatCard("Avg Duration", avgDuration, Icons.timer, const Color(0xFFFFF7ED), const Color(0xFFF97316)),
+        _StatCard(
+          label: 'Total Calls Today',
+          value: '$totalCalls',
+          icon: Icons.phone_rounded,
+          bgColor: AppTheme.primaryBlueXLight,
+          iconColor: AppTheme.primaryBlue,
+        ),
+        _StatCard(
+          label: 'Active Agents',
+          value: '$activeAgents',
+          icon: Icons.smart_toy_rounded,
+          bgColor: AppTheme.successGreenLight,
+          iconColor: AppTheme.successGreen,
+        ),
+        _StatCard(
+          label: 'CSAT Rating',
+          value: '${satisfaction.toStringAsFixed(1)}★',
+          icon: Icons.thumb_up_rounded,
+          bgColor: AppTheme.purpleLight,
+          iconColor: AppTheme.purple,
+        ),
+        _StatCard(
+          label: 'Avg Duration',
+          value: avgDuration,
+          icon: Icons.timer_rounded,
+          bgColor: AppTheme.orangeLight,
+          iconColor: AppTheme.orange,
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color bgColor, Color iconColor) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-                  child: Icon(icon, color: iconColor, size: 18),
-                )
-              ],
-            ),
-            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          ],
-        ),
-      ),
-    );
-  }
+  // ── Analytics Chart ────────────────────────────────────────────────────────
 
-  Widget _buildAnalyticsChartCard() {
+  Widget _buildChartCard() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Call Analytics', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                    Text('Weekly call volume', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                    Text('Call Analytics',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const Text('Weekly call volume',
+                        style: TextStyle(
+                            fontSize: 12, color: AppTheme.textSecondary)),
                   ],
                 ),
-                Row(
-                  children: [
-                    Icon(Icons.fiber_manual_record, color: Colors.green, size: 10),
-                    SizedBox(width: 4),
-                    Text('Live', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ],
-                )
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successGreenLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.circle, color: AppTheme.successGreen, size: 8),
+                      SizedBox(width: 5),
+                      Text('Live',
+                          style: TextStyle(
+                              color: AppTheme.successGreen,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             SizedBox(
-              height: 200,
-              child: _chartData.isEmpty 
-                ? const Center(child: Text("No chart data available", style: TextStyle(color: Color(0xFF64748B))))
-                : BarChart(
-                    BarChartData(
-                      barGroups: _generateBarGroups(),
-                      borderData: FlBorderData(show: false),
-                      titlesData: FlTitlesData(
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            getTitlesWidget: (value, meta) {
-                              return Text(value.toInt().toString(), style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10));
-                            },
+              height: 180,
+              child: _chartData.isEmpty
+                  ? const Center(
+                      child: Text('No chart data yet',
+                          style: TextStyle(color: AppTheme.textSecondary)))
+                  : BarChart(
+                      BarChartData(
+                        barGroups: _generateBarGroups(),
+                        borderData: FlBorderData(show: false),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: 5,
+                          getDrawingHorizontalLine: (_) => const FlLine(
+                              color: AppTheme.dividerLight, strokeWidth: 1),
+                        ),
+                        titlesData: FlTitlesData(
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 28,
+                              getTitlesWidget: (value, meta) => Text(
+                                value.toInt().toString(),
+                                style: const TextStyle(
+                                    color: AppTheme.textTertiary, fontSize: 10),
+                              ),
+                            ),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final i = value.toInt();
+                                if (i >= 0 && i < _chartData.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      _chartData[i]['day'] ?? '',
+                                      style: const TextStyle(
+                                          color: AppTheme.textTertiary,
+                                          fontSize: 10),
+                                    ),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                            ),
                           ),
                         ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              if (value.toInt() >= 0 && value.toInt() < _chartData.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(_chartData[value.toInt()]['day'] ?? '', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10)),
-                                );
-                              }
-                              return const Text('');
-                            },
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            tooltipRoundedRadius: 8,
+                            getTooltipItem: (group, gi, rod, ri) =>
+                                BarTooltipItem(
+                              '${rod.toY.toInt()} calls',
+                              const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12),
+                            ),
                           ),
                         ),
-                      ),
-                      gridData: FlGridData(
-                        show: true,
-                        horizontalInterval: 5,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1),
                       ),
                     ),
-                  ),
-            )
+            ),
           ],
         ),
       ),
@@ -221,91 +316,202 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<BarChartGroupData> _generateBarGroups() {
-    return List.generate(_chartData.length, (index) {
-      final callsCount = (_chartData[index]['calls'] ?? 0).toDouble();
+    return List.generate(_chartData.length, (i) {
+      final count = (_chartData[i]['calls'] ?? 0).toDouble();
       return BarChartGroupData(
-        x: index,
+        x: i,
         barRods: [
           BarChartRodData(
-            toY: callsCount == 0 ? 0.3 : callsCount,
-            color: const Color(0xFF2563EB),
-            width: 14,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+            toY: count == 0 ? 0.4 : count,
+            gradient: const LinearGradient(
+              colors: [AppTheme.primaryBlueLight, AppTheme.primaryBlueDark],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ),
+            width: 16,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: 15,
-              color: const Color(0xFFF1F5F9),
+              color: AppTheme.dividerLight,
             ),
-          )
+          ),
         ],
       );
     });
   }
 
+  // ── Recent Calls ───────────────────────────────────────────────────────────
+
   Widget _buildRecentCallsCard() {
+    final recent = _calls.take(5).toList();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Recent Calls', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            const SizedBox(height: 16),
-            _calls.isEmpty 
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: Text("No calls found", style: TextStyle(color: Color(0xFF64748B)))),
-                )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _calls.take(5).length, // Show up to 5 calls on dashboard
-                  separatorBuilder: (context, index) => const Divider(color: Color(0xFFF1F5F9)),
-                  itemBuilder: (context, index) {
-                    final call = _calls[index];
-                    final String caller = call['caller'] ?? "Unknown";
-                    final String agentName = call['agent'] ?? "N/A";
-                    final String duration = call['duration'] ?? "0s";
-                    final String status = call['status'] ?? "completed";
-                    
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                            child: const Icon(Icons.phone_outlined, color: Color(0xFF64748B), size: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Recent Calls',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                if (_calls.length > 5)
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text('View all'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (recent.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text('No calls yet',
+                      style: TextStyle(color: AppTheme.textSecondary)),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: recent.length,
+                separatorBuilder: (_, __) => const Divider(),
+                itemBuilder: (context, i) {
+                  final call    = recent[i];
+                  final caller  = call['caller']   ?? 'Unknown';
+                  final agent   = call['agent']    ?? 'N/A';
+                  final dur     = call['duration'] ?? '0s';
+                  final status  = call['status']   ?? 'completed';
+                  final isOk    = status == 'completed';
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryBlueXLight,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(caller, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                                Text("Agent: $agentName", style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          child: const Icon(Icons.phone_rounded,
+                              color: AppTheme.primaryBlue, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(duration, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                              Text(
-                                status.toUpperCase(), 
+                              Text(caller,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14)),
+                              Text('Agent: $agent',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textSecondary)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(dur,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isOk
+                                    ? AppTheme.successGreenLight
+                                    : AppTheme.errorRedLight,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                status.toUpperCase(),
                                 style: TextStyle(
-                                  fontSize: 10, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: status == "completed" ? Colors.green : Colors.red,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: isOk
+                                      ? AppTheme.successGreenDark
+                                      : AppTheme.errorRed,
                                 ),
                               ),
-                            ],
-                          )
-                        ],
-                      ),
-                    );
-                  },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Stat Card Widget ──────────────────────────────────────────────────────────
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color bgColor;
+  final Color iconColor;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.bgColor,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppTheme.textSecondary),
+                    maxLines: 2,
+                  ),
                 ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 17),
+                ),
+              ],
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w800),
+            ),
           ],
         ),
       ),

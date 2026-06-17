@@ -27,6 +27,15 @@ dependencies:
   # Stripe checkout link opener
   url_launcher: ^6.2.5
 
+  # Google Fonts — Inter typeface
+  google_fonts: ^6.2.1
+
+  # Shimmer skeleton loading states
+  shimmer: ^3.0.0
+
+  # Shared animations and page transitions
+  animations: ^2.0.11
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
