@@ -259,7 +259,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
       appBar: AppBar(
         title: const Text('Call History', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      drawer: AppNavigationDrawer(currentRoute: '/calls'),
+
       body: _isLoading
         ? const Center(child: CircularProgressIndicator())
         : Column(

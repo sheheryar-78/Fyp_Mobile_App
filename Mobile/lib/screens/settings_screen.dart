@@ -146,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      drawer: AppNavigationDrawer(currentRoute: '/settings'),
+
       body: _isLoading
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
